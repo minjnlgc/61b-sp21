@@ -144,12 +144,72 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        board.setViewingPerspective(side);
+
+        for (int col = 0; col < board.size(); col++) {
+            boolean isMoved = moveUpAllTiles(board, col);
+            if (isMoved) {
+                changed = true;
+            }
+
+            int updatedScore =  mergeTiles(board, col);
+            if (updatedScore > 0) {
+                this.score += updatedScore;
+                changed = true;
+            }
+            moveUpAllTiles(board, col);
+        }
+
         checkGameOver();
         if (changed) {
             setChanged();
         }
+
+        board.setViewingPerspective(Side.NORTH);
         return changed;
     }
+
+    private static boolean moveUpAllTiles(Board b, int col) {
+        int size = b.size();
+        int rowToMove = size - 1;
+
+        boolean isMoved = false;
+
+        for (int row = size - 1; row >= 0; row -= 1) {
+            if (b.tile(col, row) != null) {
+                if (row != rowToMove) {
+                    Tile t = b.tile(col, row);
+                    b.move(col, rowToMove, t);
+                    isMoved = true;
+                }
+                rowToMove -= 1;
+            }
+        }
+        return isMoved;
+    }
+
+    private static int mergeTiles(Board b, int col) {
+        int size = b.size();
+        int score = 0;
+
+        for (int row = size - 1; row > 0; row -= 1) {
+            if (b.tile(col, row) != null) {
+                int nextRow = row - 1;
+                while (nextRow >= 0 && b.tile(col, nextRow) == null) {
+                    nextRow -= 1;
+                }
+                if (nextRow >= 0 && b.tile(col, row).value() == b.tile(col, nextRow).value()) {
+                    score += b.tile(col, row).value() * 2;
+                    b.move(col, row, b.tile(col, nextRow));
+                    row = nextRow;  // Skip the next tile after merging
+
+                }
+            }
+        }
+
+        return score;
+    }
+
 
     /**
      * Checks if the game is over and sets the gameOver variable
